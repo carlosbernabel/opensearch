@@ -1,0 +1,33 @@
+services:
+  opensearch:
+    hostname: node01
+    image: opensearchproject/opensearch:2.10.0
+    container_name: opensearch
+    environment:
+      - discovery.type=single-node  # Usamos un solo nodo para desarrollo
+      - cluster.name=opensearch-cluster
+      - bootstrap.memory_lock=true  # Bloqueo de memoria para evitar swapping
+      - "OPENSEARCH_JAVA_OPTS=-Xmx512m -Xms512m"  # Configuración de memoria
+#      - opensearch.security.disabled=true  # Deshabilitar la seguridad para desarrollo (si es necesario)
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - ./scripts:/opt/scripts # Configuración LDAP
+      - ./opensearch_data:/usr/share/opensearch/data  # Volumen persistente para los datos
+    ports:
+      - 9200:9200  # Exponer el puerto de OpenSearch
+      - 9600:9600  # Para integrar con Elastic APM (si es necesario)
+
+  opensearch-dashboards:
+    image: opensearchproject/opensearch-dashboards:2.10.0
+    container_name: opensearch-dashboards
+    environment:
+      - OPENSEARCH_HOSTS=https://node01:9200  # Conectar a OpenSearch
+      - OPENSEARCH_DASHBOARDS_DEFAULT_INDEX=logs-*  # Índice por defecto
+    ports:
+      - 5601:5601  # Exponer el puerto de Dashboards
+    depends_on:
+      - opensearch  # Asegurarse de que OpenSearch esté disponible antes de iniciar
+# ./securityadmin.sh -icl -cert ../../../config/kirk.pem -key ../../../config/kirk-key.pem -cacert ../../../config/root-ca.pem -nhnv -f ../../../config/opensearch-security/config.yml 
